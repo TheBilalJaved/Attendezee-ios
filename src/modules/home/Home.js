@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, Image, Linking, Modal, Dimensions, StatusBar, RefreshControl, SafeAreaView ,ActivityIndicator} from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, Image, Linking, Modal, Dimensions, StatusBar, RefreshControl, SafeAreaView, ActivityIndicator } from 'react-native'
 import { HomeStyle } from './HomeStyle';
 import Feather from 'react-native-vector-icons/Feather';
 import { useSelector } from 'react-redux';
@@ -13,7 +13,8 @@ import DropDownPicker from 'react-native-dropdown-picker';
 import LinearGradient from 'react-native-linear-gradient';
 import Geolocation from '@react-native-community/geolocation';
 import { request, requestMultiple, checkMultiple, PERMISSIONS } from 'react-native-permissions';
-
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import FontAwesome from 'react-native-vector-icons/FontAwesome'
 import AwesomeAlert from 'react-native-awesome-alerts';
 import RNSettings from 'react-native-settings';
 
@@ -26,7 +27,7 @@ import Menu, {
 import { doLogout } from '../../store/actions/AuthAction';
 import { notificationListner, requestUserPermission } from '../../componenets/Notification';
 import messaging from '@react-native-firebase/messaging';
-
+import { reminder } from '../../componenets/Notification';
 const THEME_COLOR = '#494446';
 
 
@@ -67,8 +68,11 @@ export default function Home({ navigation }) {
     const [isopen, setisopen] = useState(false)
     const userbussines_data = []
     const [scanner, setscanner] = useState(false)
+    const [scanner2, setscanner2] = useState(false)
     const [ModalActive, setModalActive] = useState(false)
-
+    const [ShowTracking, setShowTracking] = useState(false)
+    const [SelectButton, setSelectButton] = useState("Start_shift")
+    const [ShowCamera, setShowCamera] = useState(false)
     getbussiness.map((item, index) => {
         const obj = { label: `${item.business_name}`, value: `${item.business_id}` }
         userbussines_data.push(obj)
@@ -76,7 +80,7 @@ export default function Home({ navigation }) {
 
 
     const [items, setItems] = useState(userbussines_data);
-    const [value, setValue] = useState();
+    const [value, setValue] = useState('');
 
     useEffect(() => {
         let loading = false
@@ -113,6 +117,7 @@ export default function Home({ navigation }) {
     const dispatch = useDispatch()
     useEffect(() => {
         const callForBussiness = async () => {
+            setShowCamera(true)
             dispatch(AttendanceByDay(value));
             dispatch(bussiness_rules(value));
         }
@@ -131,7 +136,7 @@ export default function Home({ navigation }) {
         const qrResult = e.data.split(/[|,]/)
         console.log(qrResult)
         if (qrResult[0] == value) {
-            dispatch(getattendance(setModalActive,setalert_color, lat, lon, setalert_message, setshowAlert, value, shift))
+            dispatch(getattendance(setModalActive, setalert_color, lat, lon, setalert_message, setshowAlert, value, shift))
             setscanner(false)
         } else {
             setshowAlert(true)
@@ -151,7 +156,7 @@ export default function Home({ navigation }) {
 
                 if (statuses[PERMISSIONS.IOS.CAMERA] == "granted" && statuses[PERMISSIONS.IOS.LOCATION_WHEN_IN_USE] == "granted") {
                     console.log('Camera', statuses[PERMISSIONS.IOS.CAMERA]);
-                    setscanner(true)
+                    setscanner2(true)
                 } else {
                     requestMultiple([PERMISSIONS.IOS.CAMERA, PERMISSIONS.IOS.LOCATION_WHEN_IN_USE]).then((statuses) => {
                         console.log('Camera', statuses[PERMISSIONS.IOS.CAMERA]);
@@ -169,14 +174,6 @@ export default function Home({ navigation }) {
                 // console.log(position)
             }, (error) => {
                 if (error.code == 2) {
-
-                    // RNSettings.openSetting(RNSettings.LOCATION_SETTING).then(
-                    //     result => {
-                    //         if (result === RNSettings.ENABLED) {
-                    //             // console.log('location is enabled');
-                    //         }
-                    //     },
-                    // );
                     try {
                         Linking.openURL('App-Prefs:LOCATION_SERVICES')
                     } catch (error) {
@@ -266,13 +263,52 @@ export default function Home({ navigation }) {
         setisopen(false)
         navigation.navigate('Update_profile')
     }
-    const onRefresh =() => {
+    const onRefresh = () => {
         setrefreshing(true);
         setTimeout(() => {
             dispatch(AttendanceByDay(value));
             setrefreshing(false)
-        }, 3000); 
+        }, 3000);
     };
+    const QrScanner = () => {
+
+
+        checkMultiple([PERMISSIONS.IOS.CAMERA, PERMISSIONS.IOS.LOCATION_WHEN_IN_USE]).then((statuses) => {
+
+            if (statuses[PERMISSIONS.IOS.CAMERA] == "granted" && statuses[PERMISSIONS.IOS.LOCATION_WHEN_IN_USE] == "granted") {
+                console.log('Camera', statuses[PERMISSIONS.IOS.CAMERA]);
+                setscanner(true)
+            } else {
+                requestMultiple([PERMISSIONS.IOS.CAMERA, PERMISSIONS.IOS.LOCATION_WHEN_IN_USE]).then((statuses) => {
+                    console.log('Camera', statuses[PERMISSIONS.IOS.CAMERA]);
+                    console.log('Camera', statuses[PERMISSIONS.IOS.LOCATION_WHEN_IN_USE]);
+
+                });
+            }
+
+        });
+
+
+        Geolocation.getCurrentPosition((position) => {
+            setlat(position.coords.latitude);
+            setlon(position.coords.longitude)
+            // console.log(position)
+        }, (error) => {
+            if (error.code == 2) {
+                try {
+                    Linking.openURL('App-Prefs:LOCATION_SERVICES')
+                } catch (error) {
+                    console.log(error)
+                }
+
+            }
+        }
+        )
+
+        setshift(SelectButton)
+
+
+    }
 
     return (
         <SafeAreaView style={{
@@ -281,14 +317,14 @@ export default function Home({ navigation }) {
         }}>
             <SafeAreaView style={{ flex: 1, zIndex: 1 }}>
                 <StatusBar translucent backgroundColor='#494446' barStyle="light-content" />
-                <ScrollView nestedScrollEnabled={true} style={HomeStyle.root} 
-            refreshControl={
-                <RefreshControl
-                    refreshing={refreshing}
-                    onRefresh={onRefresh}
-                />}
-            >
-                {/* <ScrollView nestedScrollEnabled={true} style={HomeStyle.root}> */}
+                <ScrollView nestedScrollEnabled={true} style={HomeStyle.root}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                        />}
+                >
+                    {/* <ScrollView nestedScrollEnabled={true} style={HomeStyle.root}> */}
 
                     <View style={HomeStyle.logo_container}>
 
@@ -304,6 +340,13 @@ export default function Home({ navigation }) {
                             </View>
                             {/* Eclips button */}
                             <View style={HomeStyle.eclips}>
+
+                                {true ?
+                                    <TouchableOpacity onPress={() => navigation.navigate('Maps')}><Image style={{ height: 25, width: 25, marginTop: 2, marginRight: 6, tintColor: 'white' }} source={require('../../assets/location.png')} /></TouchableOpacity>
+                                    :
+                                    null
+                                }
+                                <TouchableOpacity onPress={() => QrScanner()}><MaterialCommunityIcons style={{ marginTop: 5 }} name='qrcode-scan' size={20} color='white' /></TouchableOpacity>
                                 <View >
                                     <Menu opened={isopen}
                                         onBackdropPress={() => onBackdropPress()}
@@ -406,34 +449,159 @@ export default function Home({ navigation }) {
                         transparent={true}
                         visible={scanner}
                         onRequestClose={() => {
-                            Alert.alert("Modal has been closed.");
+
                             setscanner(!scanner);
                         }}
                     >
-                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'black' }}>
+                        <SafeAreaView style={{ flex: 1, backgroundColor: 'black' }}>
+                            {ShowCamera ?
+                                <QRCodeScanner
+                                    fadeIn={false}
+                                    cameraStyle={{ height: Dimensions.get('window').height, }}
+                                    permissionDialogMessage='Need Camera Permission '
+                                    showMarker={true}
+                                    onRead={onSuccess}
+                                    customMarker={
+                                        <View style={HomeStyle.rectangleContainer}>
+                                            <View style={HomeStyle.topOverlay} />
+
+
+                                            <View style={{ flexDirection: "row" }}>
+                                                <View style={HomeStyle.leftAndRightOverlay} />
+
+                                                <View style={HomeStyle.rectangle} />
+
+
+
+                                                <View style={HomeStyle.leftAndRightOverlay} />
+                                            </View>
+
+                                            <View style={HomeStyle.bottomOverlay} />
+                                        </View>
+
+                                    }
+
+                                />
+                                : null
+                            }
+
+                            <View
+                                style={{
+                                    position: 'absolute',
+                                    right: 20,
+                                    top: 50,
+
+                                }}>
+                                <TouchableOpacity
+                                    onPress={() => setscanner(false)}
+                                ><FontAwesome name='close' size={30} color='white' /></TouchableOpacity>
+                            </View>
+                            <View style={{ position: 'absolute', top: '15%', marginHorizontal: '7%', width: '85%' }}>
+
+                                <DropDownPicker
+                                    placeholder="Select Business"
+                                    open={open}
+                                    listMode="SCROLLVIEW"
+                                    value={value}
+                                    items={items}
+                                    setOpen={setOpen}
+                                    setValue={setValue}
+                                    setItems={setItems}
+                                    zIndex={1000}
+                                />
+
+                            </View>
+                            <View
+                                style={{
+                                    position: 'absolute',
+                                    width: '90%',
+                                    bottom: 90,
+                                    right: 0,
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    marginHorizontal: 20,
+                                    justifyContent: 'space-between'
+
+                                }}>
+                                <TouchableOpacity
+                                    style={{ height: 60, width: 60, backgroundColor: SelectButton == "Start_shift" ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.7)", alignItems: 'center', justifyContent: 'center', borderRadius: 60 / 2, }}
+                                    onPress={() => setSelectButton("Start_shift")}
+                                ><Feather name='log-in' size={30} color={SelectButton !== "Start_shift" ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.9)"} /></TouchableOpacity>
+                                <TouchableOpacity
+                                    style={{ height: 60, width: 60, backgroundColor: SelectButton == 'End_shift' ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.7)", alignItems: 'center', justifyContent: 'center', borderRadius: 60 / 2 }}
+                                    onPress={() => setSelectButton('End_shift')}
+                                ><Feather name='log-out' size={30} color={SelectButton !== 'End_shift' ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.9)"} /></TouchableOpacity>
+                                <TouchableOpacity
+                                    style={{ height: 60, width: 60, backgroundColor: SelectButton == 'Start_break' ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.7)", alignItems: 'center', justifyContent: 'center', borderRadius: 60 / 2 }}
+                                    onPress={() => setSelectButton('Start_break')}
+                                ><Feather name='bell' size={30} color={SelectButton !== 'Start_break' ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.9)"} /></TouchableOpacity>
+                                <TouchableOpacity
+                                    style={{ height: 60, width: 60, backgroundColor: SelectButton == 'End_break' ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.7)", alignItems: 'center', justifyContent: 'center', borderRadius: 60 / 2 }}
+                                    onPress={() => setSelectButton('End_break')}
+                                ><Feather name='bell-off' size={30} color={SelectButton !== 'End_break' ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.9)"} /></TouchableOpacity>
+                            </View>
+
+                        </SafeAreaView>
+
+                    </Modal>
+
+
+
+
+                    <Modal
+                        style={HomeStyle.modalstyle}
+
+                        transparent={true}
+                        visible={scanner2}
+                        onRequestClose={() => {
+
+                            setscanner2(!scanner2);
+                        }}
+                    >
+                        <View style={{ flex: 1, backgroundColor: 'black' }}>
                             <QRCodeScanner
                                 fadeIn={false}
-
+                                cameraStyle={{ height: Dimensions.get('window').height, }}
                                 permissionDialogMessage='Need Camera Permission '
                                 showMarker={true}
                                 onRead={onSuccess}
+                                customMarker={
+                                    <View style={HomeStyle.rectangleContainer}>
+                                        <View style={HomeStyle.topOverlay}>
+                                            <Text style={{ fontSize: 30, color: "white" }}>
+                                                QR CODE SCANNER
+                                            </Text>
+                                        </View>
 
-                                topContent={
-                                    <View style={{ backgroundColor: '#494446' }}>
+                                        <View style={{ flexDirection: "row" }}>
+                                            <View style={HomeStyle.leftAndRightOverlay} />
 
+                                            <View style={HomeStyle.rectangle} />
+
+                                            <View style={HomeStyle.leftAndRightOverlay} />
+                                        </View>
+
+                                        <View style={HomeStyle.bottomOverlay} />
                                     </View>
+
                                 }
-                                bottomContent={
-                                    <TouchableOpacity onPress={() => setscanner(false)} style={HomeStyle.scannerbtn}>
-                                        <LinearGradient style={HomeStyle.scannerbtn_text}
-                                            colors={['#7C131A', '#5E0D14']}
-                                        >
-                                            <Text style={{ color: '#ffffff', fontSize: 16, letterSpacing: 2 }}>
-                                                Close
-                                            </Text></LinearGradient>
-                                    </TouchableOpacity>
-                                }
+                            // flashMode={RNCamera.Constants.FlashMode.auto}
+
                             />
+                            <View
+                                style={{
+                                    position: 'absolute',
+                                    right: 20,
+                                    top: 50,
+
+                                }}>
+                                <TouchableOpacity
+                                    onPress={() => setscanner2(false)}
+                                ><FontAwesome name='close' size={30} color='white' /></TouchableOpacity>
+                            </View>
+
+
+
                         </View>
 
                     </Modal>
@@ -573,12 +741,10 @@ export default function Home({ navigation }) {
 
 
                 </ScrollView>
-               <TouchableOpacity onPress={()=>navigation.navigate('Feedback')} style={{height:50,width:50,borderRadius:50/2,position:'absolute',bottom:8,right:10,backgroundColor:'white',alignItems:'center',justifyContent:'center'}}>
-                   <Image style={{height:40,width:40}} source={require('../../assets/feedback.jpeg')}/>
-               </TouchableOpacity>
-               <TouchableOpacity onPress={()=>navigation.navigate('Maps')} style={{height:50,width:50,borderRadius:50/2,position:'absolute',bottom:8,left:10,backgroundColor:'white',alignItems:'center',justifyContent:'center'}}>
-                   <Image style={{height:40,width:40}} source={require('../../assets/feedback.jpeg')}/>
-               </TouchableOpacity>
+                <TouchableOpacity onPress={() => navigation.navigate('Feedback')} style={{ height: 50, width: 50, borderRadius: 50 / 2, position: 'absolute', bottom: 8, right: 10, backgroundColor: 'white', alignItems: 'center', justifyContent: 'center' }}>
+                    <Image style={{ height: 40, width: 40 }} source={require('../../assets/feedback.jpeg')} />
+                </TouchableOpacity>
+
             </SafeAreaView>
         </SafeAreaView>
     )

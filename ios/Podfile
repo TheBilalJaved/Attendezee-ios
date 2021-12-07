@@ -41,6 +41,7 @@ pod 'react-native-google-maps', :path => rn_maps_path
 
   pod 'react-native-html-to-pdf', :path => '../node_modules/react-native-html-to-pdf'
 
+
   target 'AttendezzTests' do
     inherit! :complete
     # Pods for testing
@@ -56,3 +57,7 @@ pod 'react-native-google-maps', :path => rn_maps_path
     react_native_post_install(installer)
   end
 end
+target 'ImageNotification' do
+  pod 'Firebase/Messaging', '~> 8.9.0' # eg 6.31.0
+end
+

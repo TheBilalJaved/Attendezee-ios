@@ -1,6 +1,7 @@
 import { LOGIN, LOGOUT, RETRIEVEDUSER, FORGETPASSWORD, UPDATEPASSWORD, UPDATEPROFILE, FILTERITEMS, ATTENDENCE, BUSINESSRULE, ATTENDANCE_DAY, IMAGE, LEAVE, APPLYLEAVE } from '../Sates';
 const initialState = {
     loading: true,
+    offline: false,
     token: null,
     data: null,
     wrongemail: null,
@@ -10,11 +11,12 @@ const initialState = {
     UPmessage: '',
     filter_data: [],
     user_bussines: [],
-    alert_messeage:'',
-    business_rules:[],
-    todayAttendance:[],
-    leavedata:[],
-    profileimage:''
+    alert_messeage: '',
+    business_rules: [],
+    todayAttendance: [],
+    leavedata: [],
+    profileimage: '',
+
 
 }
 
@@ -32,7 +34,7 @@ function AuthReducer(state = initialState, action) {
                 data: action.payload.user_data_info,
                 invalid_user_email_password: action.payload.invalid_email_password,
                 user_bussines: action.payload.userbussiness,
-                profileimage:action.payload.profile_pic,
+                profileimage: action.payload.profile_pic,
             };
         }
         case LOGOUT: {
@@ -40,8 +42,8 @@ function AuthReducer(state = initialState, action) {
                 ...state,
                 token: null,
                 filter_data: action.payload,
-                business_rules:[],
-                leavedata:[]
+                business_rules: [],
+                leavedata: []
 
             }
         }
@@ -54,10 +56,10 @@ function AuthReducer(state = initialState, action) {
 
             }
         }
-        case BUSINESSRULE:{
-            return{
+        case BUSINESSRULE: {
+            return {
                 ...state,
-                business_rules:action.payload
+                business_rules: action.payload
             }
         }
         case UPDATEPASSWORD: {
@@ -70,11 +72,12 @@ function AuthReducer(state = initialState, action) {
         case RETRIEVEDUSER: {
             return {
                 ...state,
+                offline: action.payload.offline,
                 token: action.payload.usertoken,
                 loading: action.payload.loading,
                 data: action.payload.userdata,
                 user_bussines: action.payload.userbussiness,
-                profileimage:action.payload.profile_pic
+                profileimage: action.payload.profile_pic
 
             }
         }
@@ -88,19 +91,19 @@ function AuthReducer(state = initialState, action) {
         case ATTENDENCE: {
             return {
                 ...state,
-                todayAttendance:action.payload
+                todayAttendance: action.payload
             }
         }
-        case IMAGE:{
-            return{
+        case IMAGE: {
+            return {
                 ...state,
-                profileimage:action.payload
+                profileimage: action.payload
             }
         }
-        case APPLYLEAVE:{
-            return{
+        case APPLYLEAVE: {
+            return {
                 ...state,
-                leavedata:action.payload
+                leavedata: action.payload
             }
         }
 
@@ -111,16 +114,16 @@ function AuthReducer(state = initialState, action) {
                 data: action.payload.updatedata,
             }
         }
-        case ATTENDANCE_DAY:{
-            return{
+        case ATTENDANCE_DAY: {
+            return {
                 ...state,
-                todayAttendance:action.payload
+                todayAttendance: action.payload
             }
         }
-        case LEAVE:{
-            return{
+        case LEAVE: {
+            return {
                 ...state,
-                leavedata:action.payload
+                leavedata: action.payload
             }
         }
 
